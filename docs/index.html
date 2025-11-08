@@ -13,6 +13,10 @@
     .slider-wrap{display:flex;gap:8px;align-items:center;margin-top:8px}
     .btn{margin-top:18px;padding:12px;width:100%;border-radius:10px;border:0;background:#2f6de0;color:#fff;font-weight:700;font-size:16px}
     .labels{display:flex;justify-content:space-between;font-size:12px;margin-top:6px}
+    .status{margin-top:12px;padding:8px;border-radius:8px;background:#f3f4f6;font-size:13px}
+    .error{color:#b91c1c}
+    .ok{color:#065f46}
+    pre{white-space:pre-wrap;background:#efefef;padding:8px;border-radius:6px;margin-top:8px}
   </style>
 </head>
 <body>
@@ -34,21 +38,55 @@
 
   <button id="send" class="btn">Отправить заказ</button>
 
+  <div id="status" class="status">Инициализация...</div>
+  <pre id="log" style="display:none"></pre>
+
   <script>
+    function log(s, isError=false){
+      const p = document.getElementById("status");
+      p.innerText = s;
+      p.className = "status " + (isError ? "error" : "ok");
+      const pre = document.getElementById("log");
+      pre.style.display = "block";
+      pre.innerText = (new Date()).toLocaleTimeString() + " — " + s + "\n\n" + pre.innerText;
+      console.log(s);
+    }
+
     const tg = window.Telegram?.WebApp;
-    if (tg) tg.ready();
+    if (!tg) {
+      log("Web App API недоступен. Откройте этот URL внутри Telegram через кнопку бота.", true);
+    } else {
+      tg.ready();
+      // показать initData если есть (для отладки)
+      try{
+        const init = tg.initData || tg.initDataUnsafe || "initData отсутствует";
+        log("WebApp API: available. initData: " + (init ? "[present]" : "[absent]"));
+      }catch(e){
+        log("WebApp API: available.", false);
+      }
+    }
 
     const mapDeadline = ["Срочно","1 день","2 дня","3 дня","Неделя","Неограниченно"];
     document.getElementById("send").addEventListener("click", () => {
       const description = document.getElementById("desc").value.trim();
       const deadline = mapDeadline[Number(document.getElementById("range").value) || 0];
       const budget = document.getElementById("budget").value || "";
+
       if (!description) { alert("Опишите задачу"); return; }
       const payload = { description, deadline, budget };
+
       if (tg && tg.sendData) {
-        tg.sendData(JSON.stringify(payload)); // данные уйдут боту как message.web_app_data.data
+        try{
+          tg.sendData(JSON.stringify(payload));
+          log("Данные отправлены через Telegram.WebApp.sendData(). Закройте окно мини-приложения.", false);
+          // опционально закрыть WebApp
+          // tg.close();
+        }catch(err){
+          log("Ошибка при вызове sendData: " + (err.message || err), true);
+        }
       } else {
-        alert("Откройте это приложение внутри Telegram (Web App API недоступен).");
+        log("Telegram.WebApp API недоступен. Откройте мини-приложение через бот в Telegram.", true);
+        alert("Откройте это приложение внутри Telegram (через кнопку бота).");
       }
     });
   </script>
