@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Заказ разработки</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root{--gap:12px}
+    body{font-family:system-ui, sans-serif;padding:18px;color:#111;background:#fff}
+    label{display:block;margin-top:var(--gap);font-weight:600}
+    textarea,input[type=number]{width:100%;padding:10px;margin-top:6px;border-radius:8px;border:1px solid #ccc;font-size:14px}
+    .slider-wrap{display:flex;gap:8px;align-items:center;margin-top:8px}
+    .btn{margin-top:18px;padding:12px;width:100%;border-radius:10px;border:0;background:#2f6de0;color:#fff;font-weight:700;font-size:16px}
+    .labels{display:flex;justify-content:space-between;font-size:12px;margin-top:6px}
+  </style>
+</head>
+<body>
+  <h2>Новый заказ: бот / скрипт</h2>
+
+  <label for="desc">Описание бота</label>
+  <textarea id="desc" rows="6" placeholder="Опишите функционал, интеграции, примеры входов/выходов"></textarea>
+
+  <label>Сроки разработки</label>
+  <div class="slider-wrap">
+    <input id="range" type="range" min="0" max="5" value="2" />
+  </div>
+  <div class="labels">
+    <span>Срочно</span><span>1д</span><span>2д</span><span>3д</span><span>Неделя</span><span>Неогр.</span>
+  </div>
+
+  <label for="budget">Бюджет (₽)</label>
+  <input id="budget" type="number" placeholder="Укажите сумму" />
+
+  <button id="send" class="btn">Отправить заказ</button>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) tg.ready();
+
+    const mapDeadline = ["Срочно","1 день","2 дня","3 дня","Неделя","Неограниченно"];
+    document.getElementById("send").addEventListener("click", () => {
+      const description = document.getElementById("desc").value.trim();
+      const deadline = mapDeadline[Number(document.getElementById("range").value) || 0];
+      const budget = document.getElementById("budget").value || "";
+      if (!description) { alert("Опишите задачу"); return; }
+      const payload = { description, deadline, budget };
+      if (tg && tg.sendData) {
+        tg.sendData(JSON.stringify(payload)); // данные уйдут боту как message.web_app_data.data
+      } else {
+        alert("Откройте это приложение внутри Telegram (Web App API недоступен).");
+      }
+    });
+  </script>
+</body>
+</html>
