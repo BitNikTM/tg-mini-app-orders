@@ -2,63 +2,236 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Заявка на разработку</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Заявка (с логами)</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { margin: 0; padding: 20px; font-family: sans-serif; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
-        h1 { text-align: center; margin-bottom: 20px; }
-        label { display: block; margin: 10px 0 5px; }
-        textarea, input, select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid var(--tg-theme-hint-color); background: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-text-color); }
-        button { width: 100%; padding: 15px; background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; border-radius: 5px; cursor: pointer; margin-top: 20px; }
-        #slider-value { text-align: center; margin: 10px 0; }
-        .disabled { opacity: 0.5; pointer-events: none; }
+        :root {
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-hint-color: #777777;
+            --tg-theme-secondary-bg-color: #f4f4f4;
+            --tg-theme-button-color: #007bff;
+            --tg-theme-button-text-color: #ffffff;
+        }
+
+        body { 
+            margin: 0; 
+            padding: 15px; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            background: var(--tg-theme-bg-color); 
+            color: var(--tg-theme-text-color); 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        h1 { text-align: center; margin-top: 0; margin-bottom: 20px; font-size: 1.5em; }
+        
+        label { display: block; margin: 15px 0 5px; font-weight: 500; }
+        
+        textarea, input[type="text"], select { 
+            width: 100%; 
+            padding: 12px; 
+            border-radius: 8px; 
+            border: 1px solid var(--tg-theme-hint-color); 
+            background: var(--tg-theme-secondary-bg-color); 
+            color: var(--tg-theme-text-color); 
+            box-sizing: border-box; /* Важно для padding */
+            font-size: 1em;
+        }
+        
+        input[type="range"] { width: 100%; }
+        
+        #slider-value { text-align: center; margin: 5px 0 10px; font-weight: 500; color: var(--tg-theme-text-color); }
+        
+        #submit-button { 
+            width: 100%; 
+            padding: 15px; 
+            background: var(--tg-theme-button-color); 
+            color: var(--tg-theme-button-text-color); 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            margin-top: 20px; 
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+        
+        #submit-button.disabled { opacity: 0.5; pointer-events: none; }
+        
+        /* Блок для логов */
+        #log-container {
+            margin-top: 25px;
+            padding: 10px;
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: 5px;
+            border: 1px dashed var(--tg-theme-hint-color);
+        }
+        #log-container h3 { margin: 0 0 10px; font-size: 0.9em; }
+        #log-output {
+            font-family: monospace;
+            font-size: 0.8em;
+            color: var(--tg-theme-hint-color);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
     </style>
 </head>
 <body>
-    <h1>Заявка на разработку бота/скрипта</h1>
+    <h1>Новая заявка</h1>
     <form id="order-form">
-        <label for="description">Описание бота:</label>
-        <textarea id="description" rows="4" required></textarea>
+        <label for="description">Описание бота/задачи:</label>
+        <textarea id="description" rows="4" placeholder="Например: бот для..." required></textarea>
         
         <label for="timeline">Сроки разработки:</label>
         <input type="range" id="timeline" min="0" max="5" step="1" value="0" required>
         <div id="slider-value">Срочно</div>
         
-        <label for="budget">Бюджет:</label>
-        <input type="text" id="budget" required>
+        <label for="budget">Предполагаемый бюджет:</label>
+        <input type="text" id="budget" placeholder="Например: 10 000 руб." required>
         
-        <button type="submit">Отправить заявку</button>
+        <button type="submit" id="submit-button">Отправить заявку</button>
     </form>
 
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <div id="log-container">
+        <h3>Журнал отладки:</h3>
+        <pre id="log-output"></pre>
+    </div>
+
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();  // Расширение на полный экран
-        
-        if (!tg.initData) {
-            document.getElementById('order-form').classList.add('disabled');
-            alert('Доступ только из Telegram Mini App.');
-            return;
+        // Функция для логирования прямо на страницу
+        function logToPage(message) {
+            const logOutput = document.getElementById('log-output');
+            if (logOutput) {
+                logOutput.textContent += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+                console.log(message); // Дублируем в консоль для веб-инспектора
+            } else {
+                console.log('Fallback log:', message);
+            }
         }
 
-        const timelines = ['Срочно', '1 день', '2 дня', '3 дня', 'Неделя', 'Неограниченно'];
-        const slider = document.getElementById('timeline');
-        const sliderValue = document.getElementById('slider-value');
-        
-        slider.addEventListener('input', () => {
-            sliderValue.textContent = timelines[slider.value];
-        });
+        // Ждем, пока загрузится вся страница
+        document.addEventListener('DOMContentLoaded', () => {
+            logToPage("Страница загружена (DOMContentLoaded).");
 
-        document.getElementById('order-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const data = {
-                init_data: tg.initData,
-                description: document.getElementById('description').value,
-                timeline: timelines[slider.value],
-                budget: document.getElementById('budget').value
-            };
-            tg.sendData(JSON.stringify(data));
-            tg.close();
+            let tg;
+            try {
+                // 1. Проверяем, доступен ли объект Telegram
+                tg = window.Telegram.WebApp;
+                logToPage("window.Telegram.WebApp успешно найден.");
+            } catch (e) {
+                logToPage("ОШИБКА: window.Telegram.WebApp не найден!");
+                document.getElementById('order-form').classList.add('disabled');
+                return; // Все останавливаем
+            }
+
+            // 2. Расширяем приложение
+            try {
+                tg.expand();
+                logToPage("tg.expand() вызван.");
+            } catch (e) {
+                logToPage(`Ошибка при tg.expand(): ${e.message}`);
+            }
+
+            // 3. САМАЯ ВАЖНАЯ ПРОВЕРКА: initData
+            if (tg.initData) {
+                logToPage(`tg.initData НАЙДЕН. Первые 50 символов: ${tg.initData.substring(0, 50)}...`);
+            } else {
+                logToPage("КРИТИЧЕСКАЯ ОШИБКА: tg.initData ПУСТОЙ или null!");
+                logToPage("Это нормально, если открыто в браузере, но не в Telegram.");
+                document.getElementById('order-form').classList.add('disabled');
+                // Не останавливаем, чтобы можно было протестировать форму
+            }
+            
+            // 4. Показываем и включаем MainButton (Кнопка в интерфейсе Telegram)
+            // Это хороший тест, что связь с клиентом есть
+            try {
+                tg.MainButton.setText("Отправить через MainButton");
+                tg.MainButton.show();
+                logToPage("Главная кнопка Telegram (MainButton) настроена и показана.");
+                
+                // Обработчик для MainButton (альтернативный способ отправки)
+                tg.MainButton.onClick(() => {
+                    logToPage("MainButton нажата! Собираем данные...");
+                    // Вызываем submit вручную у нашей формы
+                    document.getElementById('order-form').requestSubmit();
+                });
+
+            } catch(e) {
+                logToPage(`Ошибка при настройке MainButton: ${e.message}`);
+            }
+
+            // 5. Настройка слайдера
+            const timelines = ['Срочно', '1 день', '2 дня', '3 дня', 'Неделя', 'Неограниченно'];
+            const slider = document.getElementById('timeline');
+            const sliderValue = document.getElementById('slider-value');
+            
+            slider.addEventListener('input', () => {
+                sliderValue.textContent = timelines[slider.value];
+            });
+            // Устанавливаем начальное значение
+            sliderValue.textContent = timelines[slider.value];
+
+            // 6. Главный обработчик отправки формы
+            document.getElementById('order-form').addEventListener('submit', (e) => {
+                // Всегда отменяем стандартное поведение
+                e.preventDefault();
+                logToPage("Обработчик 'submit' формы вызван.");
+
+                const button = document.getElementById('submit-button');
+                button.classList.add('disabled');
+                button.textContent = 'Отправка...';
+
+                const description = document.getElementById('description').value;
+                const timeline = timelines[document.getElementById('timeline').value];
+                const budget = document.getElementById('budget').value;
+
+                logToPage(`Собраны данные:
+  - Описание: ${description.substring(0, 20)}...
+  - Сроки: ${timeline}
+  - Бюджет: ${budget}`);
+
+                // 7. Формируем итоговый объект данных
+                const data = {
+                    init_data: tg.initData || "INIT_DATA_ОТСУТСТВУЕТ", // Передаем initData
+                    description: description,
+                    timeline: timeline,
+                    budget: budget
+                };
+
+                const jsonData = JSON.stringify(data);
+                logToPage(`Данные в формате JSON: ${jsonData.substring(0, 100)}...`);
+
+                // 8. САМЫЙ ВАЖНЫЙ МОМЕНТ: отправка данных
+                try {
+                    // Проверяем, есть ли initData, перед реальной отправкой
+                    if (!tg.initData) {
+                        logToPage("ОТМЕНА: Попытка отправить без initData.");
+                        alert("Невозможно отправить: приложение открыто не в Telegram.");
+                        button.classList.remove('disabled');
+                        button.textContent = 'Отправить заявку';
+                        return; // Прерываем отправку
+                    }
+                    
+                    logToPage("Вызов tg.sendData()...");
+                    tg.sendData(jsonData);
+                    
+                    // Важно: tg.close() может не дать tg.sendData() завершиться.
+                    // Добавим небольшую задержку.
+                    logToPage("Данные отправлены. Закрытие через 1 сек...");
+                    setTimeout(() => {
+                        tg.close();
+                    }, 1000);
+
+                } catch (e) {
+                    logToPage(`КРИТИЧЕСКАЯ ОШИБКА при tg.sendData(): ${e.message}`);
+                    alert(`Ошибка отправки: ${e.message}`);
+                    button.classList.remove('disabled');
+                    button.textContent = 'Отправить заявку';
+                }
+            });
+
+            logToPage("Все скрипты инициализированы.");
         });
     </script>
 </body>
