@@ -1,94 +1,65 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Заказ разработки</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    :root{--gap:12px}
-    body{font-family:system-ui, sans-serif;padding:18px;color:#111;background:#fff}
-    label{display:block;margin-top:var(--gap);font-weight:600}
-    textarea,input[type=number]{width:100%;padding:10px;margin-top:6px;border-radius:8px;border:1px solid #ccc;font-size:14px}
-    .slider-wrap{display:flex;gap:8px;align-items:center;margin-top:8px}
-    .btn{margin-top:18px;padding:12px;width:100%;border-radius:10px;border:0;background:#2f6de0;color:#fff;font-weight:700;font-size:16px}
-    .labels{display:flex;justify-content:space-between;font-size:12px;margin-top:6px}
-    .status{margin-top:12px;padding:8px;border-radius:8px;background:#f3f4f6;font-size:13px}
-    .error{color:#b91c1c}
-    .ok{color:#065f46}
-    pre{white-space:pre-wrap;background:#efefef;padding:8px;border-radius:6px;margin-top:8px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заявка на разработку</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: sans-serif; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
+        h1 { text-align: center; margin-bottom: 20px; }
+        label { display: block; margin: 10px 0 5px; }
+        textarea, input, select { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid var(--tg-theme-hint-color); background: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-text-color); }
+        button { width: 100%; padding: 15px; background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; border-radius: 5px; cursor: pointer; margin-top: 20px; }
+        #slider-value { text-align: center; margin: 10px 0; }
+        .disabled { opacity: 0.5; pointer-events: none; }
+    </style>
 </head>
 <body>
-  <h2>Новый заказ: бот / скрипт</h2>
+    <h1>Заявка на разработку бота/скрипта</h1>
+    <form id="order-form">
+        <label for="description">Описание бота:</label>
+        <textarea id="description" rows="4" required></textarea>
+        
+        <label for="timeline">Сроки разработки:</label>
+        <input type="range" id="timeline" min="0" max="5" step="1" value="0" required>
+        <div id="slider-value">Срочно</div>
+        
+        <label for="budget">Бюджет:</label>
+        <input type="text" id="budget" required>
+        
+        <button type="submit">Отправить заявку</button>
+    </form>
 
-  <label for="desc">Описание бота</label>
-  <textarea id="desc" rows="6" placeholder="Опишите функционал, интеграции, примеры входов/выходов"></textarea>
-
-  <label>Сроки разработки</label>
-  <div class="slider-wrap">
-    <input id="range" type="range" min="0" max="5" value="2" />
-  </div>
-  <div class="labels">
-    <span>Срочно</span><span>1д</span><span>2д</span><span>3д</span><span>Неделя</span><span>Неогр.</span>
-  </div>
-
-  <label for="budget">Бюджет (₽)</label>
-  <input id="budget" type="number" placeholder="Укажите сумму" />
-
-  <button id="send" class="btn">Отправить заказ</button>
-
-  <div id="status" class="status">Инициализация...</div>
-  <pre id="log" style="display:none"></pre>
-
-  <script>
-    function log(s, isError=false){
-      const p = document.getElementById("status");
-      p.innerText = s;
-      p.className = "status " + (isError ? "error" : "ok");
-      const pre = document.getElementById("log");
-      pre.style.display = "block";
-      pre.innerText = (new Date()).toLocaleTimeString() + " — " + s + "\n\n" + pre.innerText;
-      console.log(s);
-    }
-
-    const tg = window.Telegram?.WebApp;
-    if (!tg) {
-      log("Web App API недоступен. Откройте этот URL внутри Telegram через кнопку бота.", true);
-    } else {
-      tg.ready();
-      // показать initData если есть (для отладки)
-      try{
-        const init = tg.initData || tg.initDataUnsafe || "initData отсутствует";
-        log("WebApp API: available. initData: " + (init ? "[present]" : "[absent]"));
-      }catch(e){
-        log("WebApp API: available.", false);
-      }
-    }
-
-    const mapDeadline = ["Срочно","1 день","2 дня","3 дня","Неделя","Неограниченно"];
-    document.getElementById("send").addEventListener("click", () => {
-      const description = document.getElementById("desc").value.trim();
-      const deadline = mapDeadline[Number(document.getElementById("range").value) || 0];
-      const budget = document.getElementById("budget").value || "";
-
-      if (!description) { alert("Опишите задачу"); return; }
-      const payload = { description, deadline, budget };
-
-      if (tg && tg.sendData) {
-        try{
-          tg.sendData(JSON.stringify(payload));
-          log("Данные отправлены через Telegram.WebApp.sendData(). Закройте окно мини-приложения.", false);
-          // опционально закрыть WebApp
-          // tg.close();
-        }catch(err){
-          log("Ошибка при вызове sendData: " + (err.message || err), true);
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();  // Расширение на полный экран
+        
+        if (!tg.initData) {
+            document.getElementById('order-form').classList.add('disabled');
+            alert('Доступ только из Telegram Mini App.');
+            return;
         }
-      } else {
-        log("Telegram.WebApp API недоступен. Откройте мини-приложение через бот в Telegram.", true);
-        alert("Откройте это приложение внутри Telegram (через кнопку бота).");
-      }
-    });
-  </script>
+
+        const timelines = ['Срочно', '1 день', '2 дня', '3 дня', 'Неделя', 'Неограниченно'];
+        const slider = document.getElementById('timeline');
+        const sliderValue = document.getElementById('slider-value');
+        
+        slider.addEventListener('input', () => {
+            sliderValue.textContent = timelines[slider.value];
+        });
+
+        document.getElementById('order-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const data = {
+                init_data: tg.initData,
+                description: document.getElementById('description').value,
+                timeline: timelines[slider.value],
+                budget: document.getElementById('budget').value
+            };
+            tg.sendData(JSON.stringify(data));
+            tg.close();
+        });
+    </script>
 </body>
 </html>
