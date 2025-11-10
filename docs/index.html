@@ -5,13 +5,20 @@
     <title>WebApp</title>
 </head>
 <body>
-    <h1>Привет, WebApp!</h1>
+    <h1>Привет, WebApp! Епта</h1>
+    <p>Эти данные будут отправлены боту автоматически.</p>
+
     <script>
         // Дождаться инициализации Telegram WebApp
         window.Telegram.WebApp.ready();
 
-        // Отправляем данные боту сразу при открытии
-        const dataToSend = {opened: true, timestamp: new Date().toISOString()};
+        // Отправка данных боту сразу при открытии
+        const dataToSend = {
+            opened: true,
+            timestamp: new Date().toISOString()
+        };
+
+        // Telegram.WebApp.sendData работает только если WebApp открыт через кнопку в Telegram
         Telegram.WebApp.sendData(JSON.stringify(dataToSend));
     </script>
 </body>
