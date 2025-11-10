@@ -5,20 +5,21 @@
     <title>WebApp</title>
 </head>
 <body>
-<h1>Тестинг</h1>
-<p>Эти данные отправятся боту автоматически.</p>
+    <h1>Привет WebApp!</h1>
+    <p>Эти данные отправятся боту автоматически через Inline кнопку.</p>
 
-<script>
-    window.Telegram.WebApp.ready();
+    <script>
+        // Ждем инициализации WebApp
+        window.Telegram.WebApp.ready();
 
-    // Данные, которые будем отправлять боту
-    const dataToSend = {
-        opened: true,
-        timestamp: new Date().toISOString()
-    };
+        // Данные, которые отправляем боту
+        const dataToSend = {
+            opened: true,
+            timestamp: new Date().toISOString()
+        };
 
-    // Отправка данных через InlineKeyboardButton
-    Telegram.WebApp.sendData(JSON.stringify(dataToSend));
-</script>
+        // Отправка данных через Inline кнопку
+        Telegram.WebApp.sendData(JSON.stringify(dataToSend));
+    </script>
 </body>
 </html>
